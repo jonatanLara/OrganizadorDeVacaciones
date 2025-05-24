@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      overflow-x: auto;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .title {
+      font-size: 24px;
+      font-weight: 500;
+      color: #4285f4;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .project-dropdown, .date-range {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid #dadce0;
+      font-size: 14px;
+      min-width: 200px;
+    }
+    
+    /* Estilos para la tabla de timeline */
+    .timeline-container {
+      overflow-x: auto;
+      max-width: 100%;
+      margin-top: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .timeline-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 12px;
+    }
+    
+    .timeline-table th, 
+    .timeline-table td {
+      border: 1px solid #e0e0e0;
+      padding: 6px 8px;
+      text-align: center;
+      min-width: 28px;
+      height: 28px;
+    }
+    
+    .timeline-table th {
+      background: #f5f7fa;
+      font-weight: 500;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      color: #5f6368;
+    }
+    
+    .project-row {
+      background: #e8f0fe;
+      font-weight: 500;
+    }
+    
+    .employee-row td:first-child {
+      text-align: left;
+      white-space: nowrap;
+      background: white;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      border-right: 2px solid #e0e0e0;
+    }
+    
+    .vacation-day {
+      background-color: #34a853; /* Verde para días de vacaciones */
+      color: white;
+      font-weight: bold;
+      position: relative;
+    }
+    
+    .vacation-day:after {
+      content: "✓";
+    }
+    
+    .weekend {
+      background-color: #f9f9f9;
+    }
+    
+    .today {
+      background-color: #fbbc05;
+      font-weight: bold;
+    }
+    
+    .month-divider {
+      background: #f1f3f4;
+      font-weight: bold;
+      color: #202124;
+    }
+    
+    .legend {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+    
+    .legend-color {
+      width: 18px;
+      height: 18px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .loading {
+      padding: 30px;
+      text-align: center;
+      color: #5f6368;
+      font-size: 14px;
+    }
+    
+    .error {
+      color: #d32f2f;
+      padding: 20px;
+      text-align: center;
+      background: #fce8e6;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+
+    .timeline-scroll-container {
+      width: 100%;
+      height: 70vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">
+        <i class="fas fa-calendar-alt"></i>
+        <span>Línea de Tiempo de Vacaciones</span>
+      </div>
+    </div>
+    
+    <div class="controls">
+      <select class="project-dropdown" id="projectDropdown" onchange="loadTimeline()">
+        <option value="">Todos los Proyectos</option>
+      </select>
+      
+      <select class="date-range" id="dateRange" onchange="loadTimeline()">
+        <option value="26may-21jun">26 Mayo - Agosto 2025</option>
+        <option value="custom">Personalizado...</option>
+      </select>
+
+      <button onclick="exportToPDF()" class="project-dropdown" style="cursor: pointer;">
+        <i class="fas fa-file-pdf"></i> Exportar PDF
+      </button>
+    </div>
+    
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #34a853;"></div>
+        <span>Días de vacaciones</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #f9f9f9;"></div>
+        <span>Fin de semana</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #fbbc05;"></div>
+        <span>Hoy</span>
+      </div>
+    </div>
+    
+
+    <div id="loading" class="loading">
+      <i class="fas fa-spinner fa-spin"></i> Cargando datos de vacaciones...
+    </div>
+    
+    <div id="errorContainer" style="display: none;"></div>
+    
+    <div class="timeline-scroll-container">
+      <div class="timeline-horizontal-scroll">
+        <div class="timeline-scroll-track"></div>
+      </div>
+      
+      <div class="timeline-wrapper">
+        <div class="timeline-vertical-scroll">
+          <div id="timelineView" class="timeline-table">
+            <!-- Contenido de la tabla se generará dinámicamente aquí -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    
+  </div>
+  
+  <script>
+    // Variables globales
+    let allEmployees = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = formatDate(today);
+    
+    // Inicializar al cargar la página
+    window.onload = function() {
+      loadData();
+    };
+    
+    // Formatear fecha como YYYY-MM-DD
+    function formatDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    
+    // Verificar si es fin de semana
+    function isWeekend(date) {
+      return date.getDay() === 0 || date.getDay() === 6;
+    }
+    
+    // Obtener nombre del mes en español
+    function getMonthName(monthIndex) {
+      const months = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+      ];
+      return months[monthIndex];
+    }
+    
+    // Cargar datos desde Google Apps Script
+    function loadData() {
+      showLoading();
+      
+      google.script.run
+        .withSuccessHandler(handleData)
+        .withFailureHandler(showError)
+        .obtenerDatosParaLineaDeTiempo();
+    }
+    
+    // Manejar los datos recibidos
+    function handleData(data) {
+      allEmployees = data.empleados;
+      const proyectosUnicos = [...new Set(data.empleados.map(e => e.proyecto))];
+      
+      // Llenar dropdown de proyectos
+      const dropdown = document.getElementById('projectDropdown');
+      proyectosUnicos.forEach(proyecto => {
+        const option = document.createElement('option');
+        option.value = proyecto;
+        option.textContent = proyecto;
+        dropdown.appendChild(option);
+      });
+      
+      // Renderizar timeline inicial
+      loadTimeline();
+    }
+    
+    // Mostrar estado de carga
+    function showLoading() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('errorContainer').style.display = 'none';
+      document.getElementById('timelineView').style.display = 'none';
+    }
+    
+    // Mostrar error
+    function showError(error) {
+      console.error(error);
+      document.getElementById('loading').style.display = 'none';
+      
+      const errorContainer = document.getElementById('errorContainer');
+      errorContainer.innerHTML = `
+        <div class="error">
+          <i class="fas fa-exclamation-triangle"></i>
+          <strong>Error al cargar los datos:</strong><br>
+          ${error.message || 'Por favor intenta nuevamente más tarde.'}
+        </div>
+      `;
+      errorContainer.style.display = 'block';
+    }
+    
+    // Cargar timeline según filtros
+    function loadTimeline() {
+      const selectedProject = document.getElementById('projectDropdown').value;
+      const selectedRange = document.getElementById('dateRange').value;
+      
+      // Filtrar empleados por proyecto
+      let filteredEmployees = allEmployees;
+      if (selectedProject) {
+        filteredEmployees = allEmployees.filter(e => e.proyecto === selectedProject);
+      }
+      
+      // Definir rango de fechas según selección
+      let startDate, endDate;
+      
+      if (selectedRange === '26may-21jun') {
+        startDate = new Date('2025-05-26');
+        endDate = new Date('2025-06-21');
+      } else {
+        // Para rango personalizado (podrías implementar esto después)
+        startDate = new Date('2025-05-26');
+        endDate = new Date('2025-06-21');
+      }
+      
+      // Renderizar timeline
+      renderTimeline(filteredEmployees, startDate, endDate);
+    }
+    
+    // Renderizar la línea de tiempo
+    function renderTimeline(empleados, startDate, endDate) {
+      const container = document.getElementById('timelineView');
+      
+      // Generar rango de fechas
+      const dateRange = [];
+      let currentDate = new Date(startDate);
+      
+      while (currentDate <= endDate) {
+        dateRange.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      // Agrupar empleados por proyecto
+      const proyectos = {};
+      empleados.forEach(empleado => {
+        if (!proyectos[empleado.proyecto]) {
+          proyectos[empleado.proyecto] = [];
+        }
+        proyectos[empleado.proyecto].push(empleado);
+      });
+      
+      // Crear la tabla HTML
+      let html = '<table class="timeline-table"><thead><tr><th>Empleado</th>';
+      
+      // Encabezados de fechas con divisores por mes
+      let currentMonth = null;
+      dateRange.forEach(date => {
+        const month = date.getMonth();
+        const dateStr = formatDate(date);
+        
+        // Agregar divisor de mes si cambió
+        if (month !== currentMonth) {
+          html += `<th class="month-divider" colspan="1">${getMonthName(month)}</th>`;
+          currentMonth = month;
+        }
+        
+        const day = date.getDate();
+        const isWeekendDay = isWeekend(date);
+        const isToday = dateStr === todayStr;
+        
+        let cellClass = '';
+        if (isWeekendDay) cellClass += ' weekend';
+        if (isToday) cellClass += ' today';
+        
+        html += `<th class="${cellClass}" title="${dateStr}">${day}</th>`;
+      });
+      
+      html += '</tr></thead><tbody>';
+      
+      // Filas de proyectos y empleados
+      Object.entries(proyectos).forEach(([proyecto, empleadosProyecto]) => {
+        // Fila del proyecto
+        html += `<tr class="project-row">
+          <td colspan="${dateRange.length + 1}">${proyecto}</td>
+        </tr>`;
+        
+        // Filas de empleados
+        empleadosProyecto.forEach(empleado => {
+          // Parsear fechas de vacaciones (formato: "2001-09-06, 2001-10-06")
+          const vacationDates = empleado.fechasVacaciones 
+            ? empleado.fechasVacaciones.split(', ').map(d => d.trim())
+            : [];
+          
+          html += `<tr class="employee-row">
+            <td>${empleado.nombre}<br><small>${empleado.matricula}</small></td>`;
+          
+          // Celdas de días
+          dateRange.forEach(date => {
+            const dateStr = formatDate(date);
+            const isWeekendDay = isWeekend(date);
+            const isToday = dateStr === todayStr;
+            const isVacation = vacationDates.includes(dateStr);
+            
+            let cellClass = '';
+            if (isWeekendDay) cellClass += ' weekend';
+            if (isToday) cellClass += ' today';
+            if (isVacation) cellClass += ' vacation-day';
+            
+            html += `<td class="${cellClass}" title="${empleado.nombre} - ${dateStr}"></td>`;
+          });
+          
+          html += '</tr>';
+        });
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+      
+      // Mostrar la tabla
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('timelineView').style.display = 'block';
+
+      // Sincronizar scrollbar
+      const timelineView = document.getElementById('timelineView');
+      const fakeScroll = document.getElementById('fakeScroll');
+      fakeScroll.firstElementChild.style.width = timelineView.scrollWidth + 'px';
+
+      fakeScroll.onscroll = function() {
+        timelineView.scrollLeft = fakeScroll.scrollLeft;
+      };
+      timelineView.onscroll = function() {
+        fakeScroll.scrollLeft = timelineView.scrollLeft;
+      };
+    }
+
+    function exportToPDF() {
+      const element = document.getElementById('timelineView');
+      const opt = {
+        margin:       0.5,
+        filename:     'linea-de-tiempo-vacaciones.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'a3', orientation: 'landscape' }
+      };
+      
+      html2pdf().from(element).set(opt).save();
+    }
+
+  </script>
+</body>
+</html>

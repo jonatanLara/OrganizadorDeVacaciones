@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f7fa;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #34495e;
+    }
+    select, input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    .employee-info {
+      background-color: #e8f4fd;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .info-label {
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .calendar-title {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .calendar-nav {
+      display: flex;
+      gap: 10px;
+    }
+    .calendar-nav button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+    .day {
+      padding: 10px;
+      text-align: center;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .day:hover {
+      background-color: #e0e0e0;
+    }
+    .day.other-month {
+      color: #aaa;
+      background-color: #f9f9f9;
+    }
+    .day.selected {
+      background-color: #3498db;
+      color: white;
+    }
+    .day.disabled {
+      color: #ccc;
+      cursor: not-allowed;
+      background-color: #f9f9f9;
+    }
+    .day.max-reached {
+      position: relative;
+    }
+    .day.max-reached::after {
+      content: "✕";
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 10px;
+      color: #e74c3c;
+    }
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-primary {
+      background-color: #3498db;
+      color: white;
+    }
+    .btn-secondary {
+      background-color: #95a5a6;
+      color: white;
+    }
+    .btn:disabled {
+      background-color: #bdc3c7;
+      cursor: not-allowed;
+    }
+    .error-message {
+      color: #e74c3c;
+      margin-top: 10px;
+      text-align: center;
+    }
+    .success-message {
+      color: #2ecc71;
+      margin-top: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2><i class="fas fa-calendar-alt"></i> Seleccionar Días de Vacaciones</h2>
+    
+    <div class="form-group">
+      <label for="employee-select">Seleccionar Empleado:</label>
+      <select id="employee-select" class="form-control">
+        <option value="">-- Seleccione un empleado --</option>
+      </select>
+    </div>
+    
+    <div id="employee-info" class="employee-info" style="display: none;">
+      <div class="info-item">
+        <span class="info-label">Nombre:</span>
+        <span id="employee-name"></span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Días Autorizados:</span>
+        <span id="authorized-days"></span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Días Usados:</span>
+        <span id="used-days"></span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Días Restantes:</span>
+        <span id="remaining-days"></span>
+      </div>
+    </div>
+    
+    <div id="calendar-container" style="display: none;">
+      <div class="calendar-header">
+        <button id="prev-month" class="btn-secondary"><i class="fas fa-chevron-left"></i></button>
+        <div class="calendar-title" id="calendar-title">Mayo 2025</div>
+        <button id="next-month" class="btn-secondary"><i class="fas fa-chevron-right"></i></button>
+      </div>
+      
+      <div class="weekdays">
+        <div>Dom</div>
+        <div>Lun</div>
+        <div>Mar</div>
+        <div>Mié</div>
+        <div>Jue</div>
+        <div>Vie</div>
+        <div>Sáb</div>
+      </div>
+      
+      <div class="days" id="calendar-days"></div>
+      
+      <div class="actions">
+        <button id="cancel-btn" class="btn btn-secondary">Cancelar</button>
+        <button id="save-btn" class="btn btn-primary" disabled>Guardar</button>
+      </div>
+      
+      <div id="error-message" class="error-message"></div>
+      <div id="success-message" class="success-message"></div>
+    </div>
+  </div>
+  
+  <script>
+    // Variables globales
+    let currentMonth = new Date().getMonth();
+    let currentYear = new Date().getFullYear();
+    let selectedDates = [];
+    let maxDaysAllowed = 0;
+    let employeeMatricula = '';
+    let startDate// = new Date('2025-05-26');
+    let endDate// = new Date('2025-08-25');
+    
+    // Inicializar el calendario
+    document.addEventListener('DOMContentLoaded', function() {
+      // Cargar lista de empleados
+      google.script.run.withSuccessHandler(function(employees) {
+        const select = document.getElementById('employee-select');
+        employees.forEach(employee => {
+          const option = document.createElement('option');
+          option.value = employee.matricula;
+          option.textContent = `${employee.nombre} (${employee.matricula}) - ${employee.diasAutorizados} días`;
+          select.appendChild(option);
+        });
+      }).obtenerListaEmpleados();
+      
+      // Manejar cambio de empleado
+      document.getElementById('employee-select').addEventListener('change', function() {
+        const matricula = this.value;
+        if (!matricula) {
+          document.getElementById('employee-info').style.display = 'none';
+          document.getElementById('calendar-container').style.display = 'none';
+          return;
+        }
+        
+        employeeMatricula = matricula;
+        
+        // Obtener información del empleado
+        google.script.run.withSuccessHandler(function(employeeInfo) {
+          if (!employeeInfo) {
+            document.getElementById('error-message').textContent = 'No se pudo obtener información del empleado';
+            return;
+          }
+          document.getElementById('error-message').textContent = '';
+          document.getElementById('success-message').textContent = '';
+          // Mostrar información del empleado
+          document.getElementById('employee-name').textContent = employeeInfo.nombre;
+          document.getElementById('authorized-days').textContent = employeeInfo.diasAutorizados;
+          document.getElementById('used-days').textContent = employeeInfo.diasUsados;
+          document.getElementById('remaining-days').textContent = employeeInfo.diasRestantes;
+          
+          maxDaysAllowed = employeeInfo.diasRestantes;
+          selectedDates = employeeInfo.fechasSeleccionadas;
+          
+          if (employeeInfo.mijita === 170) {
+            startDate = new Date('2025-07-01');
+            endDate = new Date('2025-08-25');
+          } else if (employeeInfo.mijita === 150) {
+            startDate = new Date('2025-05-26');
+            endDate = new Date('2025-06-30');
+          } else {
+            startDate = new Date('2025-05-26');
+            endDate = new Date('2025-06-30');
+          }
+
+          document.getElementById('employee-info').style.display = 'block';
+          document.getElementById('calendar-container').style.display = 'block';
+          
+          // Generar calendario
+          generateCalendar(currentMonth, currentYear);
+        }).obtenerInfoEmpleado(matricula);
+      });
+      
+      // Navegación del calendario
+      document.getElementById('prev-month').addEventListener('click', function() {
+        currentMonth--;
+        if (currentMonth < 0) {
+          currentMonth = 11;
+          currentYear--;
+        }
+        generateCalendar(currentMonth, currentYear);
+      });
+      
+      document.getElementById('next-month').addEventListener('click', function() {
+        currentMonth++;
+        if (currentMonth > 11) {
+          currentMonth = 0;
+          currentYear++;
+        }
+        generateCalendar(currentMonth, currentYear);
+      });
+      
+      // Botón cancelar
+      document.getElementById('cancel-btn').addEventListener('click', function() {
+        google.script.host.close();
+      });
+      
+      // Botón guardar
+      document.getElementById('save-btn').addEventListener('click', function() {
+        if (selectedDates.length === 0) {
+          document.getElementById('error-message').textContent = 'Debe seleccionar al menos un día';
+          return;
+        }
+        
+        google.script.run.withSuccessHandler(function(result) {
+          if (result.success) {
+            document.getElementById('error-message').textContent = '';
+            document.getElementById('success-message').textContent = result.message;
+            
+            // Actualizar días restantes
+            const remainingDays = maxDaysAllowed - selectedDates.length;
+            document.getElementById('remaining-days').textContent = remainingDays;
+            document.getElementById('used-days').textContent = selectedDates.length;
+            maxDaysAllowed = remainingDays;
+          } else {
+            document.getElementById('error-message').textContent = result.message;
+          }
+        }).actualizarVacaciones(employeeMatricula, selectedDates);
+      });
+    });
+    
+    // Generar calendario
+    function generateCalendar(month, year) {
+      const calendarDays = document.getElementById('calendar-days');
+      calendarDays.innerHTML = '';
+      
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const daysInMonth = lastDay.getDate();
+      
+      document.getElementById('calendar-title').textContent = 
+        `${getMonthName(month)} ${year}`;
+      
+      // Días de la semana anteriores
+      const startingDay = firstDay.getDay();
+      for (let i = 0; i < startingDay; i++) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'day other-month';
+        calendarDays.appendChild(dayElement);
+      }
+      
+      // Días del mes
+      for (let i = 1; i <= daysInMonth; i++) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'day';
+        dayElement.textContent = i;
+        
+        const currentDate = new Date(year, month, i);
+        
+        // Verificar si está en el rango permitido
+        if (currentDate < startDate || currentDate > endDate) {
+          dayElement.classList.add('disabled');
+        } else {
+          // Verificar si ya está seleccionado
+          const dateStr = formatDate(currentDate);
+          if (selectedDates.includes(dateStr)) {
+            dayElement.classList.add('selected');
+          }
+          
+          dayElement.addEventListener('click', function() {
+            toggleDateSelection(currentDate, dayElement);
+          });
+        }
+        
+        calendarDays.appendChild(dayElement);
+      }
+      
+      updateSaveButton();
+    }
+    
+    // Alternar selección de fecha
+    function toggleDateSelection(date, element) {
+      const dateStr = formatDate(date);
+      const index = selectedDates.indexOf(dateStr);
+      
+      if (index === -1) {
+        // Verificar si se pueden seleccionar más días
+        if (selectedDates.length >= maxDaysAllowed) {
+          element.classList.add('max-reached');
+          setTimeout(() => {
+            element.classList.remove('max-reached');
+          }, 1000);
+          return;
+        }
+        
+        selectedDates.push(dateStr);
+        element.classList.add('selected');
+      } else {
+        selectedDates.splice(index, 1);
+        element.classList.remove('selected');
+      }
+      
+      updateSaveButton();
+    }
+    
+    // Actualizar estado del botón Guardar
+    function updateSaveButton() {
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.disabled = selectedDates.length === 0;
+      
+      if (selectedDates.length > 0) {
+        saveBtn.textContent = `Guardar (${selectedDates.length} días seleccionados)`;
+      } else {
+        saveBtn.textContent = 'Guardar';
+      }
+    }
+    
+    // Funciones auxiliares
+    function getMonthName(month) {
+      const months = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      ];
+      return months[month];
+    }
+    
+    function formatDate(date) {
+      const year = date.getFullYear();
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+  </script>
+</body>
+</html>
