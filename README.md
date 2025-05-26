@@ -1,11 +1,7 @@
 <!-- Títulos heading h1 - h6 -->
 <div style="display:flex; ">
 <div style=" padding:20px; ">
-<img  src="https://avatars.githubusercontent.com/u/5728020?v=4" style="width:120px;
-    border-radius: 50%;
-    aspect-ratio: 1;
-    object-fit: cover;" />
-
+<img  src="https://avatars.githubusercontent.com/u/5728020?v=4" style="width:120px;border-radius: 50%;aspect-ratio: 1;object-fit: cover;" />
 </div>
 <div style=" padding:20px; ">
 <details open>
@@ -17,7 +13,7 @@
 <!-- Para generar enlaces -->
 <p>Puedes ver los recursos y el proyecto completo en el siguiente link</p>
 
-[github.com/jonatanLara/toPDF](https://github.com/jonatanLara/toPDF.git "github.com/jonatanLara/toPDF")
+[github.com/jonatanLara/OrganizadorDeVacaciones](https://github.com/jonatanLara/OrganizadorDeVacaciones "github.com/jonatanLara/OrganizadorDeVacaciones")
 </div>
 </div>
 
@@ -53,11 +49,11 @@ Accede a tu cuenta de google y selecciona la aplicación de googleSheet y crea u
 */
 ```
 #### Paso 3. Añadir el código en AppScript
-##### Vamos a crear 3 documentos adicionales: 
-:heavy_check_mark: CalendarioVacaciones.html
-:heavy_check_mark: ResumenCompleto.html
-:heavy_check_mark: LineaDeTiempo.html
-:heavy_check_mark: Código.gs
+##### Vamos a crear 3 documentos adicionales:  
+:heavy_check_mark: CalendarioVacaciones.html  
+:heavy_check_mark: ResumenCompleto.html  
+:heavy_check_mark: LineaDeTiempo.html  
+:heavy_check_mark: Código.gs  
 
 > Este ultimo _Código.gs_ me lo genera automatico appscript
 
@@ -87,3 +83,6 @@ Notaremos que al ejecutar en nuestro documento de googlesheet en el menu notarem
 :exclamation: Esta opción me permite ver los días seleccionados de todo el personal por medio de una linea del tiempo esto nos ayuda a observar visualmente cuando colisionan las fechas entre usuarios. Podemos notar que los dias que tiene sus vacaciones se representa por un cuadro de color verde. Tambien tenemos una opción adicional que permire exportar esa infomación en PDF.
 #### Test
 :exclamation: Esta opción me permite ver si tengo registros de personas con registros de vacaciones es una alerta y su objetivo es hacer un test.
+
+Hoja Calendario
+![ScreenShot]('https://github.com/jonatanLara/OrganizadorDeVacaciones/blob/main/Ejemplos/SheetCalendario.jpg?raw=true')
