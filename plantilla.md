@@ -1,21 +1,92 @@
-# 🗓️ Organizador de Vacaciones con Google Sheets y Apps Script
 
-**Organizador de Vacaciones** es una solución construida sobre Google Sheets + Apps Script que permite a organizaciones gestionar fácilmente los días de vacaciones de su personal mediante una interfaz interactiva y visual.
 
----
+<p style="text-align: center;">
+<table style="border: none;">
+  <tr>
+    <td width="140">
+      <img src="https://avatars.githubusercontent.com/u/5728020?v=4" width="120" style="border-radius: 50%;" />
+    </td>
+    <td>
+        <summary><b>🔗 Lista de redes sociales</b></summary>
+        <img alt="GitHub followers" src="https://img.shields.io/github/followers/jonatanLara?style=social">
+        <img alt="YouTube Channel Subscribers" src="https://img.shields.io/youtube/channel/subscribers/UCledsnzGqlKpvKOaHYUvHHQ?style=social&logo=youtube&logoColor=%23ff0000">
+        <p>Puedes ver los recursos y el proyecto completo en el siguiente link:</p>
+<a href="https://github.com/jonatanLara/OrganizadorDeVacaciones">
+<b>github.com/jonatanLara/OrganizadorDeVacaciones</b>
+</a>
+</td>
+  </tr>
+</table>
+</p>
 
-## ✅ Características
+## Organizador de vacaciones :chart_with_upwards_trend:
+Es un organizador de vacaciones, te permite registrar por medio de una interfaz el control de los días asignados por usuario
 
-- Registro de días de vacaciones por usuario
-- Interfaz HTML amigable para selección de fechas
-- Validación por número de días autorizados
-- Línea de tiempo por proyecto y exportación a PDF
-- Hojas protegidas contra edición manual
-- Visualización de resumen por persona
 
----
+> Creación del documento
 
-## 📸 Captura de Pantalla
+Crea una hoja de googleSheet
+1. Crear una hoja **Personal**
+2. Crear una tabla
+3. Añadir el código en AppScript
+
+#### Paso 1. Crear una tabla
+Accede a tu cuenta de google y selecciona la aplicación de googleSheet y crea un nuevo documento. ó accede al siguiente link :link: [googleSheet](https://docs.google.com/spreadsheets/u/0/ "Nuevo documento")
+ Cambia el nombre de la hoja o crea una nueva hoja con el nombre de **_Personal_**
+
+#### Paso 2. Crear una tabla			
+| Nombre | Matrícula | Días Autorizados | MIJITA | Coordinación | Coordinador | Reloj |
+| ----- | ----- | ----- | ----- | ----- | ----- | ----- |
+
+
+```javascript
+/**
+ * @Nombre - El nombre completo de la persona 
+ * @Matricula - En mi caso la Matrícula es el número del mi empleado o mi ID
+ * @DiasAutorizados - Es el número de días que se le autorizo al personal 
+ * @MIJITA - El mi caso tengo personal de dos projectos diferentes 150 y 170
+ * @Coordinacion - Esta columna es de ayda para visualizar a que área pertenecen
+ * @Coordinador - Esta columna es de ayuda para visualizar quien es su jefe directo
+ * @Reloj - Esta columna es de ayuda ya que las personas registran sus asistencia en diferente oficina
+*/
+```
+#### Paso 3. Añadir el código en AppScript
+##### Vamos a crear 3 documentos adicionales:  
+:heavy_check_mark: CalendarioVacaciones.html  
+:heavy_check_mark: ResumenCompleto.html  
+:heavy_check_mark: LineaDeTiempo.html  
+:heavy_check_mark: Código.gs  
+
+> Este ultimo _Código.gs_ me lo genera automatico appscript
+
+Copiamos, pegamos y guardamos el código que esta en el respositorio.
+
+> Es importante que al ejecutar el código siempre estemos en archivo _código.gs_. Al ejecutar el código por primera vez te perdira permisos, los aceptamos y miramos nuestro documento de google sheet.
+
+Notaremos que al ejecutar en nuestro documento de googlesheet en el menu notaremos que despues de la opción de ayuda, nos aparece un menu llamado Gestión de Vacaciones. Al darle clic nos aparecera una lista:
+* Iniciar Sistema
+* Registrar Vacaciones
+* Ver resumen
+* Linea de Tiempo
+* Test
+
+#### Iniciar Sistema
+:warning: Es importante que para que el sistema se prepare debemos empezar dando clic en esta opción esto permitira crear las hojas necesarias para que se almacene los registros que se hagan por usuario.
+
+> notaremos que se nos crearon dos hojas adicionales, llamadas Resumen y Calendario. Estas no las editaremos. 
+
+#### Registrar Vacaciones
+:exclamation: Esta opción me abrar un ventana modal, donde elejiremos a la persona que deseamos asignarle sus dias de vacaciones. El Buscador te da sujerencias que encuentra de tu tabla Personal. Al seleccionar al usuario que deseemos, nos aparecera un calendario donde elegiremos los días qeu deseamos otorgarles. Solo te permitira los días totales a los que tiene derecho. Podemos hacer una selecion multiple de las fechas y alternadas. Para finalizar seleccionamos guardar. cerramos el modal (Ventana). 
+
+#### Ver resumen
+:exclamation: Esta opción me permite ver los dias asignados por persona.
+
+#### Linea de Tiempo
+:exclamation: Esta opción me permite ver los días seleccionados de todo el personal por medio de una linea del tiempo esto nos ayuda a observar visualmente cuando colisionan las fechas entre usuarios. Podemos notar que los dias que tiene sus vacaciones se representa por un cuadro de color verde. Tambien tenemos una opción adicional que permire exportar esa infomación en PDF.
+#### Test
+:exclamation: Esta opción me permite ver si tengo registros de personas con registros de vacaciones es una alerta y su objetivo es hacer un test.
+
+Hoja Calendario
 
 <p align="center">
   <img 
@@ -24,68 +95,3 @@
     width="700"
   />
 </p>
-
----
-
-## 🧰 Tecnologías utilizadas
-
-- Google Sheets
-- Google Apps Script (backend)
-- HTML, CSS, JS (Frontend embebido)
-- Google Apps Script UI para modales y menús
-- html2pdf.js (para exportar línea de tiempo)
-
----
-
-## 🚀 Instalación
-
-1. Clona este repositorio o descarga los archivos.
-2. Abre [Google Sheets](https://docs.google.com/spreadsheets/u/0/) y crea un nuevo documento.
-3. Abre el editor de Apps Script: `Extensiones > Apps Script`.
-4. Copia el contenido del archivo `Código.gs` en el archivo principal del script.
-5. Crea 3 archivos adicionales en el editor:
-   - `CalendarioVacaciones.html`
-   - `ResumenCompleto.html`
-   - `LineaDeTiempo.html`
-6. Pega el contenido correspondiente en cada archivo.
-7. Guarda y recarga tu hoja.
-
----
-
-## 🛠️ Cómo usar
-
-- Al ejecutar `Inicializar Sistema`, se crean automáticamente las hojas necesarias.
-- Usa el menú `Gestión de Vacaciones` que aparece en Google Sheets para:
-  - Registrar vacaciones (modal HTML)
-  - Ver resumen
-  - Ver línea de tiempo
-- Las hojas `Resumen` y `Calendario` están protegidas para evitar edición directa.
-
----
-
-## 🧪 Pruebas rápidas
-
-- Usa la opción `Test` en el menú para validar si hay registros activos de vacaciones.
-- Exporta la línea de tiempo como PDF con un clic.
-
----
-
-## 🤝 Contribuciones
-
-¡Las contribuciones son bienvenidas!  
-Si tienes mejoras, errores que reportar o ideas para funciones nuevas, no dudes en abrir un issue o pull request.
-
----
-
-## 📄 Licencia
-
-Este proyecto está bajo la licencia [MIT](LICENSE).
-
----
-
-## 👤 Autor
-
-**Jonatan Lara**  
-[GitHub](https://github.com/jonatanLara) | [YouTube](https://www.youtube.com/@jonatanlara) | [Instagram](https://www.instagram.com/jonatanlaraortiz/)
-
----
