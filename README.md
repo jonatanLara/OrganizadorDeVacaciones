@@ -1,21 +1,25 @@
-<!-- Títulos heading h1 - h6 -->
-<div style="display:flex; ">
-<div style=" padding:20px; ">
-<img  src="https://avatars.githubusercontent.com/u/5728020?v=4" style="width:120px;border-radius: 50%;aspect-ratio: 1;object-fit: cover;" />
-</div>
-<div style=" padding:20px; ">
-<details open>
-    <summary>Lista de redes sociales </summary>
-    <img alt="GitHub followers" src="https://img.shields.io/github/followers/jonatanLara?style=social">
-    <img alt="YouTube Channel Subscribers" src="https://img.shields.io/youtube/channel/subscribers/UCledsnzGqlKpvKOaHYUvHHQ?style=social&logo=youtube&logoColor=%23ff0000">
+<p align="center">
+  <img src="https://github.com/jonatanLara/OrganizadorDeVacaciones/blob/main/ejemplos/57616e68-eb4c-4d62-91f5-e764fa8c820d.png?raw=true" alt="Organizador de Vacaciones Banner" width="100%" />
+</p>
 
-</details>
-<!-- Para generar enlaces -->
-<p>Puedes ver los recursos y el proyecto completo en el siguiente link</p>
-
-[github.com/jonatanLara/OrganizadorDeVacaciones](https://github.com/jonatanLara/OrganizadorDeVacaciones "github.com/jonatanLara/OrganizadorDeVacaciones")
-</div>
-</div>
+<p style="text-align: center;">
+<table style="border: none;">
+  <tr>
+    <td width="140">
+      <img src="https://avatars.githubusercontent.com/u/5728020?v=4" width="120" style="border-radius: 50%;" />
+    </td>
+    <td>
+        <summary><b>🔗 Lista de redes sociales</b></summary>
+        <img alt="GitHub followers" src="https://img.shields.io/github/followers/jonatanLara?style=social">
+        <img alt="YouTube Channel Subscribers" src="https://img.shields.io/youtube/channel/subscribers/UCledsnzGqlKpvKOaHYUvHHQ?style=social&logo=youtube&logoColor=%23ff0000">
+        <p>Puedes ver los recursos y el proyecto completo en el siguiente link:</p>
+<a href="https://github.com/jonatanLara/OrganizadorDeVacaciones">
+<b>github.com/jonatanLara/OrganizadorDeVacaciones</b>
+</a>
+</td>
+  </tr>
+</table>
+</p>
 
 ## Organizador de vacaciones :chart_with_upwards_trend:
 Es un organizador de vacaciones, te permite registrar por medio de una interfaz el control de los días asignados por usuario
@@ -85,4 +89,11 @@ Notaremos que al ejecutar en nuestro documento de googlesheet en el menu notarem
 :exclamation: Esta opción me permite ver si tengo registros de personas con registros de vacaciones es una alerta y su objetivo es hacer un test.
 
 Hoja Calendario
-![ScreenShot]('https://github.com/jonatanLara/OrganizadorDeVacaciones/blob/main/Ejemplos/SheetCalendario.jpg?raw=true')
+
+<p align="center">
+  <img 
+    src="https://github.com/jonatanLara/OrganizadorDeVacaciones/blob/main/Ejemplos/SheetCalendario.jpg?raw=true" 
+    alt="Hoja Calendario"
+    width="700"
+  />
+</p>
