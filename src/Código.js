@@ -1,11 +1,11 @@
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('Gestión de Vacaciones')
-    .addItem('Inicializar Sistema', 'inicializarSistema')
-    .addItem('Registrar Vacaciones', 'mostrarSelectorCalendario')
-    .addItem('Ver Resumen', 'mostrarResumenCompleto')
-    .addItem('Línea de Tiempo', 'mostrarLineaDeTiempo') // Nueva opción
-    .addItem('test', 'testDatosLineaDeTiempo')
+    .addItem('🧹 Inicializar Sistema', 'inicializarSistema')
+    .addItem('📅 Registrar Vacaciones', 'mostrarSelectorCalendario')
+    .addItem('📊 Ver Resumen', 'mostrarResumenCompleto')
+    .addItem('🗓️ Línea de Tiempo', 'mostrarLineaDeTiempo') // Nueva opción
+    .addItem('🧪 test', 'testDatosLineaDeTiempo')
     .addToUi();
 }
 // Configuración inicial
@@ -57,6 +57,7 @@ function inicializarSistema() {
   protection.setUnprotectedRanges([resumenSheet.getRange('G2:G' + (resumenData.length + 1))]);
   
   SpreadsheetApp.getUi().alert('Sistema inicializado correctamente');
+  protegerHojasDeUsuario()
 }
 
 // Mostrar el selector de calendario
@@ -324,4 +325,198 @@ function testDatosLineaDeTiempo() {
   });
   
   SpreadsheetApp.getUi().alert(`Datos verificados. ${conVacaciones.length} empleados tienen vacaciones asignadas.`);
+}
+
+function generarLineaDeTiempo() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var calendarioSheet = ss.getSheetByName('Calendario');
+  var resumenSheet = ss.getSheetByName('Resumen');
+  var personalSheet = ss.getSheetByName('Personal');
+
+  if (!calendarioSheet || !resumenSheet || !personalSheet) {
+    SpreadsheetApp.getUi().alert('Faltan hojas necesarias: Calendario, Resumen o Personal.');
+    return;
+  }
+
+  // Limpiar hoja de Calendario
+  calendarioSheet.clear();
+
+  // Obtener datos de resumen
+  var data = resumenSheet.getRange('A2:G' + resumenSheet.getLastRow()).getValues();
+
+  // Fechas visibles: 26 mayo al 21 junio 2025
+  var startDate = new Date('2025-05-26');
+  var endDate = new Date('2025-08-25'); //new Date('2025-06-21')
+
+  var dateRange = [];
+  var currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    dateRange.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  // Encabezados
+  var headers = ['Empleado'];
+  var monthHeaders = [''];
+  var dayHeaders = [''];
+
+  var currentMonth = null;
+  dateRange.forEach(function(date) {
+    var month = date.getMonth();
+    if (month !== currentMonth) {
+      monthHeaders.push(getMonthName(month));
+      currentMonth = month;
+    } else {
+      monthHeaders.push('');
+    }
+    dayHeaders.push(date.getDate());
+  });
+
+  // Escribir encabezados
+  calendarioSheet.getRange(1, 1, 1, dayHeaders.length).setValues([dayHeaders.map((_, i) => i === 0 ? "Empleado" : "")]);
+  calendarioSheet.getRange(2, 1, 1, monthHeaders.length).setValues([monthHeaders]);
+  calendarioSheet.getRange(3, 1, 1, dayHeaders.length).setValues([dayHeaders]);
+
+  calendarioSheet.getRange(1, 1, 3, dayHeaders.length)
+    .setBackground('#f5f7fa')
+    .setFontWeight('bold')
+    .setHorizontalAlignment('center');
+
+  // Obtener proyectos desde hoja Personal
+  var personalData = personalSheet.getRange('A2:D' + personalSheet.getLastRow()).getValues();
+  var proyectoMap = {};
+  personalData.forEach(function(row) {
+    proyectoMap[row[1]] = row[3] || 'Sin Proyecto'; // Matrícula → Proyecto
+  });
+
+  // Agrupar por proyecto
+  var proyectos = {};
+  data.forEach(function(row) {
+    var matricula = row[1];
+    var proyecto = proyectoMap[matricula] || 'Sin Proyecto';
+    if (!proyectos[proyecto]) proyectos[proyecto] = [];
+
+    proyectos[proyecto].push({
+      nombre: row[0],
+      matricula: row[1],
+      fechasVacaciones: row[6] || ''
+    });
+  });
+
+  var row = 4;
+  Object.keys(proyectos).forEach(function(proyecto) {
+    calendarioSheet.getRange(row, 1)
+    .setValue(proyecto)
+    .setBackground('#e8f0fe')
+    .setFontWeight('bold')
+    .setHorizontalAlignment('left');
+    row++;
+
+    calendarioSheet.getRange(row, 2, 1, dayHeaders.length - 1)
+    .setBackground('#e8f0fe');
+
+    proyectos[proyecto].forEach(function(empleado) {
+      if (!empleado.nombre || !empleado.matricula) return;
+
+      calendarioSheet.getRange(row, 1)
+        .setValue(empleado.nombre + '\n' + empleado.matricula)
+        .setVerticalAlignment('middle')
+        .setWrap(true);
+
+      var vacationDates = (empleado.fechasVacaciones || '')
+        .split(',')
+        .map(d => d.trim())
+        .filter(d => d.length > 0);
+
+      for (var col = 2; col <= dateRange.length + 1; col++) {
+        var date = dateRange[col - 2];
+        var dateStr = formatDate(date);
+        var cell = calendarioSheet.getRange(row, col);
+
+        cell.clearFormat(); // Limpiar formato previo
+
+        if (dateStr === formatDate(new Date())) {
+          cell.setBackground('#fbbc05').setFontWeight('bold');
+        } else if (vacationDates.includes(dateStr)) {
+          cell.setBackground('#34a853')
+            .setValue('✓')
+            .setFontColor('#ffffff')
+            .setFontWeight('bold')
+            .setHorizontalAlignment('center');
+        } else if (date.getDay() === 0 || date.getDay() === 6) {
+          cell.setBackground('#f9f9f9');
+        }
+      }
+
+      row++;
+    });
+  });
+
+  // Ajustes de presentación
+  calendarioSheet.setColumnWidth(1, 200);
+  for (var col = 2; col <= dayHeaders.length; col++) {
+    calendarioSheet.setColumnWidth(col, 30);
+  }
+
+  var lastRow = calendarioSheet.getLastRow();
+  for (var r = 4; r <= lastRow; r++) {
+    calendarioSheet.setRowHeight(r, 40);
+  }
+
+  calendarioSheet.setFrozenRows(3);
+  calendarioSheet.setFrozenColumns(1);
+
+  var dataRange = calendarioSheet.getRange(1, 1, lastRow, dayHeaders.length);
+  dataRange.setBorder(true, true, true, true, true, true);
+
+  SpreadsheetApp.getActiveSpreadsheet().toast("Línea de tiempo generada correctamente.");
+}
+
+// Función auxiliar para formatear fecha como YYYY-MM-DD
+function formatDate(date) {
+  var year = date.getFullYear();
+  var month = String(date.getMonth() + 1).padStart(2, '0');
+  var day = String(date.getDate()).padStart(2, '0');
+  return year + '-' + month + '-' + day;
+}
+
+// Función auxiliar para obtener nombre del mes en español
+function getMonthName(monthIndex) {
+  var months = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  ];
+  return months[monthIndex];
+}
+
+
+/* Protegemos las hojas para que no se editen */
+function protegerHojasDeUsuario() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const hojas = ['Resumen', 'Calendario'];
+  const usuario = Session.getEffectiveUser(); // Opcional: para dejarte como editor
+
+  hojas.forEach(nombreHoja => {
+    const hoja = ss.getSheetByName(nombreHoja);
+    if (!hoja) return;
+
+    // Eliminar protecciones anteriores
+    const protecciones = hoja.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+    protecciones.forEach(p => p.remove());
+
+    // Crear nueva protección
+    const proteccion = hoja.protect().setDescription(`Protección de hoja ${nombreHoja}`);
+    proteccion.setWarningOnly(false); // Bloquea completamente
+
+    // Quitar todos los editores (opcionalmente mantener al dueño/script)
+    proteccion.removeEditors(proteccion.getEditors());
+    
+    // También evitar que los colaboradores del archivo tengan acceso implícito
+    if (proteccion.canDomainEdit()) {
+      proteccion.setDomainEdit(false);
+    }
+
+    // Opcional: permitir que TÚ puedas seguir editando manualmente (útil para mantenimiento)
+    // proteccion.addEditor(usuario); 
+  });
 }

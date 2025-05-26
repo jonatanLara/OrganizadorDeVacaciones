@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="https://github.com/jonatanLara/OrganizadorDeVacaciones/blob/main/ejemplos/57616e68-eb4c-4d62-91f5-e764fa8c820d.png?raw=true" alt="Organizador de Vacaciones Banner" width="100%" />
-</p>
+
 
 <p style="text-align: center;">
 <table style="border: none;">
