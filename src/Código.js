@@ -57,6 +57,7 @@ function inicializarSistema() {
   protection.setUnprotectedRanges([resumenSheet.getRange('G2:G' + (resumenData.length + 1))]);
   
   SpreadsheetApp.getUi().alert('Sistema inicializado correctamente');
+
   protegerHojasDeUsuario()
 }
 
@@ -156,12 +157,18 @@ function actualizarVacaciones(matricula, fechasSeleccionadas) {
     };
   }
 
-  // Formatear fechas a yyyy-MM-dd
+  // Formatear fechas consistentemente
   var fechasFormateadas = fechasSeleccionadas.map(f => {
-    var d = new Date(f);
-    if (isNaN(d)) return null;
-    return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-  }).filter(Boolean)
+    // Parsear la fecha recibida del frontend
+    var parts = f.split('-');
+    var d = new Date(parts[0], parts[1]-1, parts[2]);
+    return formatDate(date); // Usar nuestra función ajustada
+    // d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+    // return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }).filter(Boolean);
+  
+  // Ordenar fechas
+  fechasFormateadas.sort();
   
   // Actualizar datos
   resumenSheet.getRange(rowIndex, 4).setValue(diasSeleccionados); // Días usados
@@ -169,6 +176,7 @@ function actualizarVacaciones(matricula, fechasSeleccionadas) {
   resumenSheet.getRange(rowIndex, 6).setValue(diasSeleccionados); // Días seleccionados
   resumenSheet.getRange(rowIndex, 7).setValue(fechasFormateadas.join(', ')); // Fechas
   
+  generarLineaDeTiempo();
   return { success: true, message: 'Vacaciones actualizadas correctamente' };
 }
 
@@ -268,6 +276,8 @@ function mostrarLineaDeTiempo() {
     .setHeight(800);
   
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Línea de Tiempo de Vacaciones por Proyecto');
+  generarLineaDeTiempo()
+  protegerHojasDeUsuario()
 }
 
 // Nueva función para obtener datos específicos para la línea de tiempo
@@ -344,9 +354,16 @@ function generarLineaDeTiempo() {
   // Obtener datos de resumen
   var data = resumenSheet.getRange('A2:G' + resumenSheet.getLastRow()).getValues();
 
-  // Fechas visibles: 26 mayo al 21 junio 2025
-  var startDate = new Date('2025-05-26');
-  var endDate = new Date('2025-08-25'); //new Date('2025-06-21')
+  // Función para ajustar zona horaria
+  const adjustForTimezone = (date) => {
+    const adjusted = new Date(date);
+    adjusted.setMinutes(adjusted.getMinutes() + adjusted.getTimezoneOffset());
+    return adjusted;
+  };
+
+  // Fechas visibles con ajuste de zona horaria
+  var startDate = adjustForTimezone(new Date('2025-05-26'));
+  var endDate = adjustForTimezone(new Date('2025-08-25'));
 
   var dateRange = [];
   var currentDate = new Date(startDate);
@@ -406,14 +423,14 @@ function generarLineaDeTiempo() {
   var row = 4;
   Object.keys(proyectos).forEach(function(proyecto) {
     calendarioSheet.getRange(row, 1)
-    .setValue(proyecto)
-    .setBackground('#e8f0fe')
-    .setFontWeight('bold')
-    .setHorizontalAlignment('left');
+      .setValue(proyecto)
+      .setBackground('#e8f0fe')
+      .setFontWeight('bold')
+      .setHorizontalAlignment('left');
     row++;
 
     calendarioSheet.getRange(row, 2, 1, dayHeaders.length - 1)
-    .setBackground('#e8f0fe');
+      .setBackground('#e8f0fe');
 
     proyectos[proyecto].forEach(function(empleado) {
       if (!empleado.nombre || !empleado.matricula) return;
@@ -423,9 +440,16 @@ function generarLineaDeTiempo() {
         .setVerticalAlignment('middle')
         .setWrap(true);
 
+      // Parsear fechas de vacaciones con ajuste de zona horaria
       var vacationDates = (empleado.fechasVacaciones || '')
         .split(',')
-        .map(d => d.trim())
+        .map(d => {
+          const trimmed = d.trim();
+          if (!trimmed) return '';
+          const parts = trimmed.split('-');
+          const date = new Date(parts[0], parts[1]-1, parts[2]);
+          return formatDate(date); // Usar nuestra función ajustada
+        })
         .filter(d => d.length > 0);
 
       for (var col = 2; col <= dateRange.length + 1; col++) {
@@ -474,10 +498,14 @@ function generarLineaDeTiempo() {
 
 // Función auxiliar para formatear fecha como YYYY-MM-DD
 function formatDate(date) {
-  var year = date.getFullYear();
-  var month = String(date.getMonth() + 1).padStart(2, '0');
-  var day = String(date.getDate()).padStart(2, '0');
-  return year + '-' + month + '-' + day;
+  // Asegurarnos de que trabajamos con fecha local (sin problemas de UTC)
+  const localDate = new Date(date);
+  localDate.setMinutes(localDate.getMinutes() + localDate.getTimezoneOffset());
+  
+  const year = localDate.getFullYear();
+  const month = String(localDate.getMonth() + 1).padStart(2, '0');
+  const day = String(localDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // Función auxiliar para obtener nombre del mes en español
@@ -488,7 +516,6 @@ function getMonthName(monthIndex) {
   ];
   return months[monthIndex];
 }
-
 
 /* Protegemos las hojas para que no se editen */
 function protegerHojasDeUsuario() {
@@ -520,3 +547,4 @@ function protegerHojasDeUsuario() {
     // proteccion.addEditor(usuario); 
   });
 }
+

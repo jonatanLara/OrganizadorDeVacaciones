@@ -329,6 +329,11 @@
             document.getElementById('remaining-days').textContent = remainingDays;
             document.getElementById('used-days').textContent = selectedDates.length;
             maxDaysAllowed = remainingDays;
+            // Cerrar el modal después de 1 segundo (para que se vea el mensaje de éxito)
+            setTimeout(() => {
+              google.script.host.close();
+            }, 1000);
+
           } else {
             document.getElementById('error-message').textContent = result.message;
           }
@@ -362,7 +367,9 @@
         dayElement.className = 'day';
         dayElement.textContent = i;
         
+        // Crear fecha local para evitar problemas de zona horaria
         const currentDate = new Date(year, month, i);
+        currentDate.setMinutes(currentDate.getMinutes() + currentDate.getTimezoneOffset());
         
         // Verificar si está en el rango permitido
         if (currentDate < startDate || currentDate > endDate) {
@@ -387,7 +394,11 @@
     
     // Alternar selección de fecha
     function toggleDateSelection(date, element) {
-      const dateStr = formatDate(date);
+      // Crear nueva fecha local para evitar problemas de zona horaria
+      const localDate = new Date(date);
+      localDate.setMinutes(localDate.getMinutes() + localDate.getTimezoneOffset());
+      
+      const dateStr = formatDate(localDate);
       const index = selectedDates.indexOf(dateStr);
       
       if (index === -1) {
@@ -399,13 +410,14 @@
           }, 1000);
           return;
         }
-        
         selectedDates.push(dateStr);
         element.classList.add('selected');
       } else {
         selectedDates.splice(index, 1);
         element.classList.remove('selected');
       }
+      // Ordenar las fechas para mejor visualización
+      selectedDates.sort();
       
       updateSaveButton();
     }
@@ -431,10 +443,15 @@
       return months[month];
     }
     
+    // Función auxiliar para formatear fecha consistentemente
     function formatDate(date) {
-      const year = date.getFullYear();
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const day = date.getDate().toString().padStart(2, '0');
+      // Asegurarnos de que trabajamos con fecha local (sin problemas de UTC)
+      const localDate = new Date(date);
+      localDate.setMinutes(localDate.getMinutes() + localDate.getTimezoneOffset());
+      
+      const year = localDate.getFullYear();
+      const month = String(localDate.getMonth() + 1).padStart(2, '0');
+      const day = String(localDate.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     }
   </script>

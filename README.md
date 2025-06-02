@@ -1,8 +1,27 @@
-# 🗓️ Organizador de Vacaciones con Google Sheets y Apps Script
+<p align="center">
+  <img 
+    src="https://github.com/jonatanLara/jonatanLara/blob/main/src/header_3_t.png?raw=true" 
+    alt="Hoja Calendario"
+    width="73%"
+  />
+</p>
 
-**Organizador de Vacaciones** es una solución construida sobre Google Sheets + Apps Script que permite a organizaciones gestionar fácilmente los días de vacaciones de su personal mediante una interfaz interactiva y visual.
+<p align="center">
+  <a href="https://github.com/jonatanLara">🐙 GitHub</a> |
+  <a href="https://www.youtube.com/@jonatanlara">📺 YouTube</a> |
+  <a href="https://www.instagram.com/jonatanlaraortiz/">📸 Instagram</a>
+</p>
+<br>
 
----
+<p align="center">
+  <img 
+    src="https://github.com/jonatanLara/OrganizadorDeVacaciones/blob/main/ejemplos/titulo_texto.png?raw=true" 
+    alt="Hoja Calendario"
+    width="100%"
+  />
+</p>
+<br>
+
 
 ## ✅ Características
 
@@ -15,15 +34,21 @@
 
 ---
 
-## 📸 Captura de Pantalla
-
 <p align="center">
   <img 
-    src="https://github.com/jonatanLara/OrganizadorDeVacaciones/blob/main/Ejemplos/SheetCalendario.jpg?raw=true" 
+    src="https://github.com/jonatanLara/OrganizadorDeVacaciones/blob/main/ejemplos/demo_texto.png?raw=true" 
     alt="Hoja Calendario"
-    width="700"
+    width="100%"
   />
 </p>
+<p align="center">
+  <img 
+    src="https://github.com/jonatanLara/OrganizadorDeVacaciones/blob/main/ejemplos/imagenes.png?raw=true" 
+    alt="Hoja Calendario"
+    width="100%"
+  />
+</p>
+
 
 ---
 
@@ -50,6 +75,9 @@
 6. Pega el contenido correspondiente en cada archivo.
 7. Guarda y recarga tu hoja.
 
+Aquí tienes un resumen de los pasos para instalar el proyecto.
+Para más detalles, consulta la [guía completa de instalación](docs/instalacion.md).
+
 ---
 
 ## 🛠️ Cómo usar
@@ -70,22 +98,24 @@
 
 ---
 
+
+<p align="center">
+  <img 
+    src="https://github.com/jonatanLara/jonatanLara/blob/main/src/autor_1.png?raw=true" 
+    alt="Hoja Calendario"
+    width="100%"
+  />
+</p>
+<br>
+
 ## 🤝 Contribuciones
 
 ¡Las contribuciones son bienvenidas!  
 Si tienes mejoras, errores que reportar o ideas para funciones nuevas, no dudes en abrir un issue o pull request.
 
 ---
-
 ## 📄 Licencia
 
 Este proyecto está bajo la licencia [MIT](LICENSE).
-
----
-
-## 👤 Autor
-
-**Jonatan Lara**  
-[GitHub](https://github.com/jonatanLara) | [YouTube](https://www.youtube.com/@jonatanlara) | [Instagram](https://www.instagram.com/jonatanlaraortiz/)
 
 ---
