@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      padding: 30px;
+      text-align: center;
+      color: #444;
+    }
+    .spinner {
+      font-size: 32px;
+      color: #3C7E32;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="spinner">⏳</div>
+  <div id="mensaje">Cargando línea de tiempo de vacaciones por proyecto...</div>
+
+  <script>
+    // Llamar a Apps Script y cerrar modal al terminar
+    google.script.run
+      .withSuccessHandler(() => {
+        document.getElementById('mensaje').textContent = '✅ Línea de tiempo generada.';
+        setTimeout(() => google.script.host.close(), 1000);
+      })
+      .generarLineaDeTiempo();
+  </script>
+</body>
+</html>
