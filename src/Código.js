@@ -1,6 +1,8 @@
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('Gestión de Vacaciones')
+    .addItem('ℹ️ Acerca del sistema', 'mostrarAcercaDe')
+    //.addItem('⚙️ Configurar Sistema', 'mostrarConfiguracionSistema')
     .addItem('🧹 Inicializar Sistema', 'inicializarSistema')
     .addItem('📅 Registrar Vacaciones', 'mostrarSelectorCalendario')
     .addItem('📊 Ver Resumen', 'mostrarResumenCompleto')
@@ -8,6 +10,30 @@ function onOpen() {
     .addItem('🧪 test', 'testDatosLineaDeTiempo')
     .addToUi();
 }
+//configuracion de fechas
+function obtenerConfiguracionFechas() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Configuración');
+  if (!sheet) return {};
+
+  const values = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+  const config = {};
+
+  values.forEach(([clave, valor]) => {
+    config[clave] = valor;
+  });
+
+  return config;
+}
+
+function obtenerDatosParaLineaDeTiempoExtendido() {
+  const datos = obtenerDatosParaLineaDeTiempo();
+  const config = obtenerConfiguracionFechas();
+  return {
+    empleados: datos.empleados,
+    config: config
+  };
+}
+
 // Configuración inicial
 function inicializarSistema() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -129,56 +155,63 @@ function obtenerInfoEmpleado(matricula) {
 
 // Actualizar días de vacaciones
 function actualizarVacaciones(matricula, fechasSeleccionadas) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var resumenSheet = ss.getSheetByName('Resumen');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const resumenSheet = ss.getSheetByName('Resumen');
   
-  // Buscar empleado en el resumen
-  var matriculaColumn = resumenSheet.getRange('B2:B' + resumenSheet.getLastRow()).getValues();
-  var rowIndex = -1;
+  const matriculaColumn = resumenSheet.getRange('B2:B' + resumenSheet.getLastRow()).getValues();
+  let rowIndex = -1;
   
-  for (var i = 0; i < matriculaColumn.length; i++) {
+  for (let i = 0; i < matriculaColumn.length; i++) {
     if (matriculaColumn[i][0] == matricula) {
-      rowIndex = i + 2;
+      rowIndex = i + 2; // compensar encabezado
       break;
     }
   }
-  
-  if (rowIndex == -1) return { success: false, message: 'Empleado no encontrado' };
-  
-  // Calcular días seleccionados
-  var diasSeleccionados = fechasSeleccionadas.length;
-  var diasAutorizados = resumenSheet.getRange(rowIndex, 3).getValue();
 
-  // Validar que no exceda los días autorizados
+  if (rowIndex === -1) {
+    return { success: false, message: 'Empleado no encontrado en hoja Resumen' };
+  }
+
+  const diasAutorizados = resumenSheet.getRange(rowIndex, 3).getValue();
+  const diasSeleccionados = fechasSeleccionadas.length;
+
   if (diasSeleccionados > diasAutorizados) {
-    return { 
-      success: false, 
-      message: 'No puede seleccionar más días de los autorizados (' + diasAutorizados + ' días)' 
+    return {
+      success: false,
+      message: `No puede seleccionar más días de los autorizados (${diasAutorizados})`
     };
   }
 
-  // Formatear fechas consistentemente
-  var fechasFormateadas = fechasSeleccionadas.map(f => {
-    // Parsear la fecha recibida del frontend
-    var parts = f.split('-');
-    var d = new Date(parts[0], parts[1]-1, parts[2]);
-    return formatDate(date); // Usar nuestra función ajustada
-    // d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-    // return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  // Formatear fechas
+  const fechasFormateadas = fechasSeleccionadas.map(f => {
+    try {
+      const parts = f.split('-');
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    } catch (e) {
+      Logger.log('Error al procesar fecha: ' + f);
+      return null;
+    }
   }).filter(Boolean);
-  
-  // Ordenar fechas
-  fechasFormateadas.sort();
-  
-  // Actualizar datos
-  resumenSheet.getRange(rowIndex, 4).setValue(diasSeleccionados); // Días usados
+
+  fechasFormateadas.sort(); // Ordenar
+
+  // Guardar en hoja
+  resumenSheet.getRange(rowIndex, 4).setValue(diasSeleccionados);                    // Días usados
   resumenSheet.getRange(rowIndex, 5).setValue(diasAutorizados - diasSeleccionados); // Días restantes
-  resumenSheet.getRange(rowIndex, 6).setValue(diasSeleccionados); // Días seleccionados
-  resumenSheet.getRange(rowIndex, 7).setValue(fechasFormateadas.join(', ')); // Fechas
-  
-  generarLineaDeTiempo();
+  resumenSheet.getRange(rowIndex, 6).setValue(diasSeleccionados);                   // Repetido (ajusta si es redundante)
+  resumenSheet.getRange(rowIndex, 7).setValue(fechasFormateadas.join(', '));        // Fechas seleccionadas
+
+  // Actualizar línea de tiempo
+  try {
+    generarLineaDeTiempo();
+  } catch (e) {
+    Logger.log("Error al generar línea de tiempo: " + e);
+  }
+
   return { success: true, message: 'Vacaciones actualizadas correctamente' };
 }
+
 
 // Función para obtener totales (nueva función)
 function obtenerTotales() {
@@ -271,12 +304,10 @@ function obtenerDatosProyectos() {
 
 // Nueva función para mostrar la vista de línea de tiempo
 function mostrarLineaDeTiempo() {
-  var htmlOutput = HtmlService.createHtmlOutputFromFile('LineaDeTiempo')
-    .setWidth(1200)
-    .setHeight(800);
-  
-  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Línea de Tiempo de Vacaciones por Proyecto');
-  generarLineaDeTiempo()
+  const html = HtmlService.createHtmlOutputFromFile('LoadingLineaDeTiempo')
+    .setWidth(400)
+    .setHeight(200);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Generando Línea de Tiempo...');
   protegerHojasDeUsuario()
 }
 
@@ -348,22 +379,26 @@ function generarLineaDeTiempo() {
     return;
   }
 
-  // Limpiar hoja de Calendario
   calendarioSheet.clear();
 
-  // Obtener datos de resumen
-  var data = resumenSheet.getRange('A2:G' + resumenSheet.getLastRow()).getValues();
+  const data = resumenSheet.getRange('A2:G' + resumenSheet.getLastRow()).getValues();
 
-  // Función para ajustar zona horaria
-  const adjustForTimezone = (date) => {
-    const adjusted = new Date(date);
-    adjusted.setMinutes(adjusted.getMinutes() + adjusted.getTimezoneOffset());
-    return adjusted;
-  };
+  // Obtener rangos desde la hoja Configuración
+  const config = obtenerConfiguracionFechas();
 
-  // Fechas visibles con ajuste de zona horaria
-  var startDate = adjustForTimezone(new Date('2025-05-26'));
-  var endDate = adjustForTimezone(new Date('2025-08-25'));
+  // Elegir el rango más amplio entre todos los posibles valores de configuración
+  const allFechas = [
+    new Date(config['RangoInicio_170']),
+    new Date(config['RangoFin_170']),
+    new Date(config['RangoInicio_150']),
+    new Date(config['RangoFin_150']),
+  ];
+
+  const minDate = adjustForTimezone(new Date(Math.min(...allFechas.map(d => d.getTime()))));
+  const maxDate = adjustForTimezone(new Date(Math.max(...allFechas.map(d => d.getTime()))));
+
+  const startDate = minDate;
+  const endDate = maxDate;
 
   var dateRange = [];
   var currentDate = new Date(startDate);
@@ -372,13 +407,13 @@ function generarLineaDeTiempo() {
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
-  // Encabezados
+  // Crear encabezados
   var headers = ['Empleado'];
   var monthHeaders = [''];
   var dayHeaders = [''];
 
   var currentMonth = null;
-  dateRange.forEach(function(date) {
+  dateRange.forEach(function (date) {
     var month = date.getMonth();
     if (month !== currentMonth) {
       monthHeaders.push(getMonthName(month));
@@ -389,7 +424,6 @@ function generarLineaDeTiempo() {
     dayHeaders.push(date.getDate());
   });
 
-  // Escribir encabezados
   calendarioSheet.getRange(1, 1, 1, dayHeaders.length).setValues([dayHeaders.map((_, i) => i === 0 ? "Empleado" : "")]);
   calendarioSheet.getRange(2, 1, 1, monthHeaders.length).setValues([monthHeaders]);
   calendarioSheet.getRange(3, 1, 1, dayHeaders.length).setValues([dayHeaders]);
@@ -399,16 +433,14 @@ function generarLineaDeTiempo() {
     .setFontWeight('bold')
     .setHorizontalAlignment('center');
 
-  // Obtener proyectos desde hoja Personal
   var personalData = personalSheet.getRange('A2:D' + personalSheet.getLastRow()).getValues();
   var proyectoMap = {};
-  personalData.forEach(function(row) {
-    proyectoMap[row[1]] = row[3] || 'Sin Proyecto'; // Matrícula → Proyecto
+  personalData.forEach(function (row) {
+    proyectoMap[row[1]] = row[3] || 'Sin Proyecto';
   });
 
-  // Agrupar por proyecto
   var proyectos = {};
-  data.forEach(function(row) {
+  data.forEach(function (row) {
     var matricula = row[1];
     var proyecto = proyectoMap[matricula] || 'Sin Proyecto';
     if (!proyectos[proyecto]) proyectos[proyecto] = [];
@@ -421,7 +453,7 @@ function generarLineaDeTiempo() {
   });
 
   var row = 4;
-  Object.keys(proyectos).forEach(function(proyecto) {
+  Object.keys(proyectos).forEach(function (proyecto) {
     calendarioSheet.getRange(row, 1)
       .setValue(proyecto)
       .setBackground('#e8f0fe')
@@ -432,7 +464,7 @@ function generarLineaDeTiempo() {
     calendarioSheet.getRange(row, 2, 1, dayHeaders.length - 1)
       .setBackground('#e8f0fe');
 
-    proyectos[proyecto].forEach(function(empleado) {
+    proyectos[proyecto].forEach(function (empleado) {
       if (!empleado.nombre || !empleado.matricula) return;
 
       calendarioSheet.getRange(row, 1)
@@ -440,15 +472,14 @@ function generarLineaDeTiempo() {
         .setVerticalAlignment('middle')
         .setWrap(true);
 
-      // Parsear fechas de vacaciones con ajuste de zona horaria
       var vacationDates = (empleado.fechasVacaciones || '')
         .split(',')
         .map(d => {
           const trimmed = d.trim();
           if (!trimmed) return '';
           const parts = trimmed.split('-');
-          const date = new Date(parts[0], parts[1]-1, parts[2]);
-          return formatDate(date); // Usar nuestra función ajustada
+          const date = new Date(parts[0], parts[1] - 1, parts[2]);
+          return formatDate(date);
         })
         .filter(d => d.length > 0);
 
@@ -457,7 +488,7 @@ function generarLineaDeTiempo() {
         var dateStr = formatDate(date);
         var cell = calendarioSheet.getRange(row, col);
 
-        cell.clearFormat(); // Limpiar formato previo
+        cell.clearFormat();
 
         if (dateStr === formatDate(new Date())) {
           cell.setBackground('#fbbc05').setFontWeight('bold');
@@ -476,7 +507,6 @@ function generarLineaDeTiempo() {
     });
   });
 
-  // Ajustes de presentación
   calendarioSheet.setColumnWidth(1, 200);
   for (var col = 2; col <= dayHeaders.length; col++) {
     calendarioSheet.setColumnWidth(col, 30);
@@ -496,6 +526,7 @@ function generarLineaDeTiempo() {
   SpreadsheetApp.getActiveSpreadsheet().toast("Línea de tiempo generada correctamente.");
 }
 
+
 // Función auxiliar para formatear fecha como YYYY-MM-DD
 function formatDate(date) {
   // Asegurarnos de que trabajamos con fecha local (sin problemas de UTC)
@@ -506,6 +537,17 @@ function formatDate(date) {
   const month = String(localDate.getMonth() + 1).padStart(2, '0');
   const day = String(localDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * Ajusta una fecha para compensar el desfase por zona horaria.
+ * Devuelve un objeto `Date` corregido en zona horaria del script.
+ */
+function adjustForTimezone(date) {
+  const timezone = Session.getScriptTimeZone();
+  const formatted = Utilities.formatDate(date, timezone, 'yyyy-MM-dd');
+  const parts = formatted.split('-');
+  return new Date(parts[0], parts[1] - 1, parts[2]);
 }
 
 // Función auxiliar para obtener nombre del mes en español
@@ -547,4 +589,29 @@ function protegerHojasDeUsuario() {
     // proteccion.addEditor(usuario); 
   });
 }
+
+function mostrarAcercaDe() {
+  const html = HtmlService.createHtmlOutput(`
+    <div style="font-family: 'Roboto', sans-serif; text-align: center; color: #333;">
+      <div style="margin-bottom: 8px;">
+        <img src="https://github.com/jonatanLara/jonatanLara/blob/main/src/avatar.png?raw=true"
+             alt="Avatar de Jonatan Lara" 
+             style="width: 178px; height: 178px; border-radius: 50%;" />
+      </div>
+      <h2 style="color: #3C7E32; margin-bottom: 10px;">Organizador de Vacaciones</h2>
+      <p style="margin-bottom: 15px;">Desarrollado con ❤️ por <strong>Jonatan Lara</strong></p>
+      <p style="margin-bottom: 10px;">Repositorio del proyecto:</p>
+      <a href="https://github.com/jonatanLara/OrganizadorDeVacaciones" target="_blank" 
+         style="color: #4285f4; font-weight: bold; text-decoration: none;">
+         github.com/jonatanLara/OrganizadorDeVacaciones
+      </a>
+      <p style="margin-top: 20px; font-size: 14px; color: #555;">
+        Consulta la guía de instalación paso a paso en el archivo <code>InstalaciónPasoAPaso.md</code> del repositorio.
+      </p>
+    </div>
+  `).setWidth(520).setHeight(420);
+
+  SpreadsheetApp.getUi().showModalDialog(html, 'Acerca del sistema');
+}
+
 
