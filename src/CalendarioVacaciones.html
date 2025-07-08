@@ -161,6 +161,27 @@
 </head>
 <body>
   <div class="container">
+
+    <!-- SPINNER DE CARGA -->
+    <div id="loading-spinner" style="
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.75);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      font-size: 18px;
+      color: #3498db;
+      font-weight: bold;
+    ">
+      <div style="margin: auto; text-align: center;">
+        <i class="fas fa-spinner fa-spin" style="font-size: 36px;"></i>
+        <div style="margin-top: 10px;">Guardando vacaciones...</div>
+      </div>
+    </div>
+
     <h2><i class="fas fa-calendar-alt"></i> Seleccionar Días de Vacaciones</h2>
     
     <div class="form-group">
@@ -192,7 +213,7 @@
     <div id="calendar-container" style="display: none;">
       <div class="calendar-header">
         <button id="prev-month" class="btn-secondary"><i class="fas fa-chevron-left"></i></button>
-        <div class="calendar-title" id="calendar-title">Mayo 2025</div>
+        <div class="calendar-title" id="calendar-title">Julio 2025</div>
         <button id="next-month" class="btn-secondary"><i class="fas fa-chevron-right"></i></button>
       </div>
       
@@ -218,242 +239,231 @@
     </div>
   </div>
   
-  <script>
-    // Variables globales
-    let currentMonth = new Date().getMonth();
-    let currentYear = new Date().getFullYear();
-    let selectedDates = [];
-    let maxDaysAllowed = 0;
-    let employeeMatricula = '';
-    let startDate// = new Date('2025-05-26');
-    let endDate// = new Date('2025-08-25');
-    
-    // Inicializar el calendario
-    document.addEventListener('DOMContentLoaded', function() {
-      // Cargar lista de empleados
-      google.script.run.withSuccessHandler(function(employees) {
-        const select = document.getElementById('employee-select');
-        employees.forEach(employee => {
-          const option = document.createElement('option');
-          option.value = employee.matricula;
-          option.textContent = `${employee.nombre} (${employee.matricula}) - ${employee.diasAutorizados} días`;
-          select.appendChild(option);
-        });
-      }).obtenerListaEmpleados();
-      
-      // Manejar cambio de empleado
-      document.getElementById('employee-select').addEventListener('change', function() {
-        const matricula = this.value;
-        if (!matricula) {
-          document.getElementById('employee-info').style.display = 'none';
-          document.getElementById('calendar-container').style.display = 'none';
+<script>
+  let currentMonth = new Date().getMonth();
+  let currentYear = new Date().getFullYear();
+  let selectedDates = [];
+  let maxDaysAllowed = 0;
+  let employeeMatricula = '';
+  let startDate;
+  let endDate;
+
+  document.addEventListener('DOMContentLoaded', function () {
+    google.script.run.withSuccessHandler(function (employees) {
+      const select = document.getElementById('employee-select');
+      employees.forEach(employee => {
+        const option = document.createElement('option');
+        option.value = employee.matricula;
+        option.textContent = `${employee.nombre} (${employee.matricula}) - ${employee.diasAutorizados} días`;
+        select.appendChild(option);
+      });
+    }).obtenerListaEmpleados();
+
+    document.getElementById('employee-select').addEventListener('change', function () {
+      const matricula = this.value;
+      if (!matricula) {
+        document.getElementById('employee-info').style.display = 'none';
+        document.getElementById('calendar-container').style.display = 'none';
+        return;
+      }
+
+      employeeMatricula = matricula;
+
+      google.script.run.withSuccessHandler(function (employeeInfo) {
+        if (!employeeInfo) {
+          document.getElementById('error-message').textContent = 'No se pudo obtener información del empleado';
           return;
         }
-        
-        employeeMatricula = matricula;
-        
-        // Obtener información del empleado
-        google.script.run.withSuccessHandler(function(employeeInfo) {
-          if (!employeeInfo) {
-            document.getElementById('error-message').textContent = 'No se pudo obtener información del empleado';
-            return;
-          }
-          document.getElementById('error-message').textContent = '';
-          document.getElementById('success-message').textContent = '';
-          // Mostrar información del empleado
-          document.getElementById('employee-name').textContent = employeeInfo.nombre;
-          document.getElementById('authorized-days').textContent = employeeInfo.diasAutorizados;
-          document.getElementById('used-days').textContent = employeeInfo.diasUsados;
-          document.getElementById('remaining-days').textContent = employeeInfo.diasRestantes;
-          
-          maxDaysAllowed = employeeInfo.diasRestantes;
-          selectedDates = employeeInfo.fechasSeleccionadas;
-          
+
+        document.getElementById('error-message').textContent = '';
+        document.getElementById('success-message').textContent = '';
+
+        document.getElementById('employee-name').textContent = employeeInfo.nombre;
+        document.getElementById('authorized-days').textContent = employeeInfo.diasAutorizados;
+        document.getElementById('used-days').textContent = employeeInfo.diasUsados;
+        document.getElementById('remaining-days').textContent = employeeInfo.diasRestantes;
+
+        maxDaysAllowed = employeeInfo.diasRestantes;
+        selectedDates = employeeInfo.fechasSeleccionadas;
+
+        if (employeeInfo.rangos) {
+          const r = employeeInfo.rangos;
           if (employeeInfo.mijita === 170) {
-            startDate = new Date('2025-07-01');
-            endDate = new Date('2025-08-25');
+            startDate = new Date(r.rangoInicio_170);
+            endDate = new Date(r.rangoFin_170);
           } else if (employeeInfo.mijita === 150) {
-            startDate = new Date('2025-05-26');
-            endDate = new Date('2025-06-30');
+            startDate = new Date(r.rangoInicio_150);
+            endDate = new Date(r.rangoFin_150);
           } else {
-            startDate = new Date('2025-05-26');
-            endDate = new Date('2025-06-30');
+            startDate = new Date(r.rangoInicio_150);
+            endDate = new Date(r.rangoFin_150);
           }
+        }
 
-          document.getElementById('employee-info').style.display = 'block';
-          document.getElementById('calendar-container').style.display = 'block';
-          
-          // Generar calendario
-          generateCalendar(currentMonth, currentYear);
-        }).obtenerInfoEmpleado(matricula);
-      });
-      
-      // Navegación del calendario
-      document.getElementById('prev-month').addEventListener('click', function() {
-        currentMonth--;
-        if (currentMonth < 0) {
-          currentMonth = 11;
-          currentYear--;
-        }
-        generateCalendar(currentMonth, currentYear);
-      });
-      
-      document.getElementById('next-month').addEventListener('click', function() {
-        currentMonth++;
-        if (currentMonth > 11) {
-          currentMonth = 0;
-          currentYear++;
-        }
-        generateCalendar(currentMonth, currentYear);
-      });
-      
-      // Botón cancelar
-      document.getElementById('cancel-btn').addEventListener('click', function() {
-        google.script.host.close();
-      });
-      
-      // Botón guardar
-      document.getElementById('save-btn').addEventListener('click', function() {
-        if (selectedDates.length === 0) {
-          document.getElementById('error-message').textContent = 'Debe seleccionar al menos un día';
-          return;
-        }
-        
-        google.script.run.withSuccessHandler(function(result) {
-          if (result.success) {
-            document.getElementById('error-message').textContent = '';
-            document.getElementById('success-message').textContent = result.message;
-            
-            // Actualizar días restantes
-            const remainingDays = maxDaysAllowed - selectedDates.length;
-            document.getElementById('remaining-days').textContent = remainingDays;
-            document.getElementById('used-days').textContent = selectedDates.length;
-            maxDaysAllowed = remainingDays;
-            // Cerrar el modal después de 1 segundo (para que se vea el mensaje de éxito)
-            setTimeout(() => {
-              google.script.host.close();
-            }, 1000);
+        document.getElementById('employee-info').style.display = 'block';
+        document.getElementById('calendar-container').style.display = 'block';
 
-          } else {
-            document.getElementById('error-message').textContent = result.message;
-          }
-        }).actualizarVacaciones(employeeMatricula, selectedDates);
-      });
+        generateCalendar(currentMonth, currentYear);
+      }).obtenerInfoEmpleado(matricula);
     });
-    
-    // Generar calendario
-    function generateCalendar(month, year) {
-      const calendarDays = document.getElementById('calendar-days');
-      calendarDays.innerHTML = '';
-      
-      const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
-      const daysInMonth = lastDay.getDate();
-      
-      document.getElementById('calendar-title').textContent = 
-        `${getMonthName(month)} ${year}`;
-      
-      // Días de la semana anteriores
-      const startingDay = firstDay.getDay();
-      for (let i = 0; i < startingDay; i++) {
-        const dayElement = document.createElement('div');
-        dayElement.className = 'day other-month';
-        calendarDays.appendChild(dayElement);
+
+    document.getElementById('prev-month').addEventListener('click', function () {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
       }
-      
-      // Días del mes
-      for (let i = 1; i <= daysInMonth; i++) {
-        const dayElement = document.createElement('div');
-        dayElement.className = 'day';
-        dayElement.textContent = i;
-        
-        // Crear fecha local para evitar problemas de zona horaria
-        const currentDate = new Date(year, month, i);
-        currentDate.setMinutes(currentDate.getMinutes() + currentDate.getTimezoneOffset());
-        
-        // Verificar si está en el rango permitido
-        if (currentDate < startDate || currentDate > endDate) {
-          dayElement.classList.add('disabled');
-        } else {
-          // Verificar si ya está seleccionado
-          const dateStr = formatDate(currentDate);
-          if (selectedDates.includes(dateStr)) {
-            dayElement.classList.add('selected');
-          }
-          
-          dayElement.addEventListener('click', function() {
-            toggleDateSelection(currentDate, dayElement);
-          });
-        }
-        
-        calendarDays.appendChild(dayElement);
+      generateCalendar(currentMonth, currentYear);
+    });
+
+    document.getElementById('next-month').addEventListener('click', function () {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
       }
-      
-      updateSaveButton();
-    }
-    
-    // Alternar selección de fecha
-    function toggleDateSelection(date, element) {
-      // Crear nueva fecha local para evitar problemas de zona horaria
-      const localDate = new Date(date);
-      localDate.setMinutes(localDate.getMinutes() + localDate.getTimezoneOffset());
-      
-      const dateStr = formatDate(localDate);
-      const index = selectedDates.indexOf(dateStr);
-      
-      if (index === -1) {
-        // Verificar si se pueden seleccionar más días
-        if (selectedDates.length >= maxDaysAllowed) {
-          element.classList.add('max-reached');
+      generateCalendar(currentMonth, currentYear);
+    });
+
+    document.getElementById('cancel-btn').addEventListener('click', function () {
+      google.script.host.close();
+    });
+
+    document.getElementById('save-btn').addEventListener('click', function () {
+      if (selectedDates.length === 0) {
+        document.getElementById('error-message').textContent = 'Debe seleccionar al menos un día';
+        console.log('save-btn debes seleccionar al menos un dia')
+        return;
+      }
+
+      // Mostrar spinner
+      document.getElementById('loading-spinner').style.display = 'flex';
+
+      google.script.run.withSuccessHandler(function (result) {
+        console.log(employeeMatricula, selectedDates)
+        // Ocultar spinner
+        document.getElementById('loading-spinner').style.display = 'none';
+
+        if (result.success) {
+          document.getElementById('error-message').textContent = '';
+          document.getElementById('success-message').textContent = "✅ " + result.message;
+
+          const remainingDays = maxDaysAllowed - selectedDates.length;
+          document.getElementById('remaining-days').textContent = remainingDays;
+          document.getElementById('used-days').textContent = selectedDates.length;
+          maxDaysAllowed = remainingDays;
+
+          // Esperar para mostrar mensaje de éxito
           setTimeout(() => {
-            element.classList.remove('max-reached');
-          }, 1000);
-          return;
+            google.script.host.close();
+          }, 1500);
+        } else {
+          document.getElementById('error-message').textContent = result.message;
         }
-        selectedDates.push(dateStr);
-        element.classList.add('selected');
+      }).actualizarVacaciones(employeeMatricula, selectedDates);
+    });
+  });
+
+  function generateCalendar(month, year) {
+    const calendarDays = document.getElementById('calendar-days');
+    calendarDays.innerHTML = '';
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+
+    document.getElementById('calendar-title').textContent =
+      `${getMonthName(month)} ${year}`;
+
+    const startingDay = firstDay.getDay();
+    for (let i = 0; i < startingDay; i++) {
+      const dayElement = document.createElement('div');
+      dayElement.className = 'day other-month';
+      calendarDays.appendChild(dayElement);
+    }
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dayElement = document.createElement('div');
+      dayElement.className = 'day';
+      dayElement.textContent = i;
+
+      const currentDate = new Date(year, month, i);
+      currentDate.setMinutes(currentDate.getMinutes() + currentDate.getTimezoneOffset());
+
+      if (startDate && endDate && (currentDate < startDate || currentDate > endDate)) {
+        dayElement.classList.add('disabled');
       } else {
-        selectedDates.splice(index, 1);
-        element.classList.remove('selected');
+        const dateStr = formatDate(currentDate);
+        if (selectedDates.includes(dateStr)) {
+          dayElement.classList.add('selected');
+        }
+
+        dayElement.addEventListener('click', function () {
+          toggleDateSelection(currentDate, dayElement);
+        });
       }
-      // Ordenar las fechas para mejor visualización
-      selectedDates.sort();
-      
-      updateSaveButton();
+
+      calendarDays.appendChild(dayElement);
     }
-    
-    // Actualizar estado del botón Guardar
-    function updateSaveButton() {
-      const saveBtn = document.getElementById('save-btn');
-      saveBtn.disabled = selectedDates.length === 0;
-      
-      if (selectedDates.length > 0) {
-        saveBtn.textContent = `Guardar (${selectedDates.length} días seleccionados)`;
-      } else {
-        saveBtn.textContent = 'Guardar';
+
+    updateSaveButton();
+  }
+
+  function toggleDateSelection(date, element) {
+    const localDate = new Date(date);
+    localDate.setMinutes(localDate.getMinutes() + localDate.getTimezoneOffset());
+
+    const dateStr = formatDate(localDate);
+    const index = selectedDates.indexOf(dateStr);
+
+    if (index === -1) {
+      if (selectedDates.length >= maxDaysAllowed) {
+        element.classList.add('max-reached');
+        setTimeout(() => {
+          element.classList.remove('max-reached');
+        }, 1000);
+        return;
       }
+      selectedDates.push(dateStr);
+      element.classList.add('selected');
+    } else {
+      selectedDates.splice(index, 1);
+      element.classList.remove('selected');
     }
-    
-    // Funciones auxiliares
-    function getMonthName(month) {
-      const months = [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-      ];
-      return months[month];
+
+    selectedDates.sort();
+    updateSaveButton();
+  }
+
+  function updateSaveButton() {
+    const saveBtn = document.getElementById('save-btn');
+    saveBtn.disabled = selectedDates.length === 0;
+
+    if (selectedDates.length > 0) {
+      saveBtn.textContent = `Guardar (${selectedDates.length} días seleccionados)`;
+    } else {
+      saveBtn.textContent = 'Guardar';
     }
-    
-    // Función auxiliar para formatear fecha consistentemente
-    function formatDate(date) {
-      // Asegurarnos de que trabajamos con fecha local (sin problemas de UTC)
-      const localDate = new Date(date);
-      localDate.setMinutes(localDate.getMinutes() + localDate.getTimezoneOffset());
-      
-      const year = localDate.getFullYear();
-      const month = String(localDate.getMonth() + 1).padStart(2, '0');
-      const day = String(localDate.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-  </script>
+  }
+
+  function getMonthName(month) {
+    const months = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return months[month];
+  }
+
+  function formatDate(date) {
+    const localDate = new Date(date);
+    localDate.setMinutes(localDate.getMinutes() + localDate.getTimezoneOffset());
+
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+</script>
+
 </body>
 </html>
