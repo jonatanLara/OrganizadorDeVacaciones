@@ -53,7 +53,6 @@
       min-width: 200px;
     }
     
-    /* Estilos para la tabla de timeline */
     .timeline-container {
       overflow-x: auto;
       max-width: 100%;
@@ -103,7 +102,7 @@
     }
     
     .vacation-day {
-      background-color: #34a853; /* Verde para días de vacaciones */
+      background-color: #34a853;
       color: white;
       font-weight: bold;
       position: relative;
@@ -164,14 +163,6 @@
       border-radius: 4px;
       margin: 20px 0;
     }
-
-    .timeline-scroll-container {
-      width: 100%;
-      height: 70vh;
-      display: flex;
-      flex-direction: column;
-    }
-
   </style>
 </head>
 <body>
@@ -189,8 +180,8 @@
       </select>
       
       <select class="date-range" id="dateRange" onchange="loadTimeline()">
-        <option value="26may-21jun">26 Mayo - Agosto 2025</option>
-        <option value="custom">Personalizado...</option>
+        <option value="01jul-31oct">01 de julio - 31 Octubre 2025</option>
+        <option value="personalizado">Personalizado...</option>
       </select>
 
       <button onclick="exportToPDF()" class="project-dropdown" style="cursor: pointer;">
@@ -213,28 +204,15 @@
       </div>
     </div>
     
-
     <div id="loading" class="loading">
       <i class="fas fa-spinner fa-spin"></i> Cargando datos de vacaciones...
     </div>
     
     <div id="errorContainer" style="display: none;"></div>
     
-    <div class="timeline-scroll-container">
-      <div class="timeline-horizontal-scroll">
-        <div class="timeline-scroll-track"></div>
-      </div>
-      
-      <div class="timeline-wrapper">
-        <div class="timeline-vertical-scroll">
-          <div id="timelineView" class="timeline-table">
-            <!-- Contenido de la tabla se generará dinámicamente aquí -->
-          </div>
-        </div>
-      </div>
+    <div class="timeline-container">
+      <div id="timelineView"></div>
     </div>
-
-    
   </div>
   
   <script>
@@ -242,18 +220,20 @@
     let allEmployees = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayStr = formatDate(today);
     
-    // Inicializar al cargar la página
-    window.onload = function() {
-      loadData();
-    };
+    // Función para ajustar zona horaria
+    function adjustForTimezone(date) {
+      const adjusted = new Date(date);
+      adjusted.setMinutes(adjusted.getMinutes() + adjusted.getTimezoneOffset());
+      return adjusted;
+    }
     
     // Formatear fecha como YYYY-MM-DD
     function formatDate(date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+      const localDate = new Date(date);
+      const year = localDate.getFullYear();
+      const month = String(localDate.getMonth() + 1).padStart(2, '0');
+      const day = String(localDate.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     }
     
@@ -269,34 +249,6 @@
         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
       ];
       return months[monthIndex];
-    }
-    
-    // Cargar datos desde Google Apps Script
-    function loadData() {
-      showLoading();
-      
-      google.script.run
-        .withSuccessHandler(handleData)
-        .withFailureHandler(showError)
-        .obtenerDatosParaLineaDeTiempo();
-    }
-    
-    // Manejar los datos recibidos
-    function handleData(data) {
-      allEmployees = data.empleados;
-      const proyectosUnicos = [...new Set(data.empleados.map(e => e.proyecto))];
-      
-      // Llenar dropdown de proyectos
-      const dropdown = document.getElementById('projectDropdown');
-      proyectosUnicos.forEach(proyecto => {
-        const option = document.createElement('option');
-        option.value = proyecto;
-        option.textContent = proyecto;
-        dropdown.appendChild(option);
-      });
-      
-      // Renderizar timeline inicial
-      loadTimeline();
     }
     
     // Mostrar estado de carga
@@ -322,6 +274,57 @@
       errorContainer.style.display = 'block';
     }
     
+    // Inicializar al cargar la página
+    window.onload = function() {
+      loadData();
+    };
+    
+    // Cargar datos desde Google Apps Script
+    function loadData() {
+      showLoading();
+      
+      google.script.run
+        .withSuccessHandler(handleData)
+        .withFailureHandler(showError)
+        .obtenerDatosParaLineaDeTiempo();
+    }
+    
+    // Manejar los datos recibidos
+    function handleData(data) {
+      // Ajustar fechas de vacaciones para cada empleado
+      allEmployees = data.empleados.map(empleado => {
+        if (empleado.fechasVacaciones) {
+          const fechasAjustadas = empleado.fechasVacaciones.split(', ')
+            .map(fecha => {
+              const parts = fecha.split('-');
+              const date = new Date(parts[0], parts[1]-1, parts[2]);
+              return formatDate(adjustForTimezone(date));
+            })
+            .join(', ');
+          
+          return {
+            ...empleado,
+            fechasVacaciones: fechasAjustadas
+          };
+        }
+        return empleado;
+      });
+      
+      const proyectosUnicos = [...new Set(allEmployees.map(e => e.proyecto))];
+      
+      // Llenar dropdown de proyectos
+      const dropdown = document.getElementById('projectDropdown');
+      proyectosUnicos.forEach(proyecto => {
+        const option = document.createElement('option');
+        option.value = proyecto;
+        option.textContent = proyecto;
+        dropdown.appendChild(option);
+      });
+      
+      // Renderizar timeline inicial
+      loadTimeline();
+    }
+    
     // Cargar timeline según filtros
     function loadTimeline() {
       const selectedProject = document.getElementById('projectDropdown').value;
@@ -336,13 +339,12 @@
       // Definir rango de fechas según selección
       let startDate, endDate;
       
-      if (selectedRange === '26may-21jun') {
-        startDate = new Date('2025-05-26');
-        endDate = new Date('2025-06-21');
+      if (selectedRange === '1jul-31oct') {
+        startDate = adjustForTimezone(new Date('2025-08-01'));
+        endDate = adjustForTimezone(new Date('2025-10-31'));
       } else {
-        // Para rango personalizado (podrías implementar esto después)
-        startDate = new Date('2025-05-26');
-        endDate = new Date('2025-06-21');
+        startDate = adjustForTimezone(new Date('2025-08-01'));
+        endDate = adjustForTimezone(new Date('2025-10-31'));
       }
       
       // Renderizar timeline
@@ -352,6 +354,7 @@
     // Renderizar la línea de tiempo
     function renderTimeline(empleados, startDate, endDate) {
       const container = document.getElementById('timelineView');
+      const todayStr = formatDate(today);
       
       // Generar rango de fechas
       const dateRange = [];
@@ -382,7 +385,7 @@
         
         // Agregar divisor de mes si cambió
         if (month !== currentMonth) {
-          html += `<th class="month-divider" colspan="1">${getMonthName(month)}</th>`;
+          html += `<th class="month-divider">${getMonthName(month)}</th>`;
           currentMonth = month;
         }
         
@@ -408,9 +411,9 @@
         
         // Filas de empleados
         empleadosProyecto.forEach(empleado => {
-          // Parsear fechas de vacaciones (formato: "2001-09-06, 2001-10-06")
+          // Parsear fechas de vacaciones
           const vacationDates = empleado.fechasVacaciones 
-            ? empleado.fechasVacaciones.split(', ').map(d => d.trim())
+            ? empleado.fechasVacaciones.split(', ')
             : [];
           
           html += `<tr class="employee-row">
@@ -441,33 +444,21 @@
       // Mostrar la tabla
       document.getElementById('loading').style.display = 'none';
       document.getElementById('timelineView').style.display = 'block';
-
-      // Sincronizar scrollbar
-      const timelineView = document.getElementById('timelineView');
-      const fakeScroll = document.getElementById('fakeScroll');
-      fakeScroll.firstElementChild.style.width = timelineView.scrollWidth + 'px';
-
-      fakeScroll.onscroll = function() {
-        timelineView.scrollLeft = fakeScroll.scrollLeft;
-      };
-      timelineView.onscroll = function() {
-        fakeScroll.scrollLeft = timelineView.scrollLeft;
-      };
     }
 
+    // Exportar a PDF
     function exportToPDF() {
       const element = document.getElementById('timelineView');
       const opt = {
-        margin:       0.5,
-        filename:     'linea-de-tiempo-vacaciones.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'in', format: 'a3', orientation: 'landscape' }
+        margin: 0.5,
+        filename: 'linea-de-tiempo-vacaciones.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'a3', orientation: 'landscape' }
       };
       
       html2pdf().from(element).set(opt).save();
     }
-
   </script>
 </body>
 </html>
